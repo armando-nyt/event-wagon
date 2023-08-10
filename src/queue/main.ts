@@ -29,27 +29,17 @@ export class FifoQueue {
     }
   }
 
-  #getQueueSync() {
-    try {
-      const file = readFileSync(this.location);
-      return { data: file.toString(), error: null };
-    } catch (error) {
-      const castError = error as Error;
-      return { data: '', error: castError };
-    }
-  }
-
   async #getQueue() {
     try {
       const file = await readFile(this.location);
-      return { data: file.toString(), error: null };
+      return { data: file.toString(), error: null as null };
     } catch (error) {
       const castError = error as Error;
-      return { data: '', error: castError };
+      return { data: null as null, error: castError };
     }
   }
 
-  async #addItem(item: HTMLLIElement) {
+  async #enqueueItem(item: HTMLLIElement) {
     try {
       const { data: currQueue, error } = await this.#getQueue();
       if (error) throw error;
@@ -57,21 +47,38 @@ export class FifoQueue {
       const parsedQueue = dom.window.document.getElementById(this.#queueId);
       parsedQueue.appendChild(item);
       await writeFile(this.location, dom.window.document.documentElement.outerHTML);
+      return null;
     } catch (error) {
       return error as Error;
     }
-    return null;
   }
 
-  async addItem(item: Record<string, string>) {
+  async enqueueItem(item: Record<string, string>) {
     const dom = new JSDOM('');
     const newItem = dom.window.document.createElement('li');
     Object.entries(item).forEach(([key, value]) => {
       newItem.dataset[key] = value;
     });
-    const err = await this.#addItem(newItem);
+    const err = await this.#enqueueItem(newItem);
     if (err) return err;
 
     return null;
+  }
+
+  async dequeueItem() {
+    try {
+      const { data: currQueue, error } = await this.#getQueue();
+      if (error) throw error;
+      const dom = new JSDOM(currQueue);
+      const parsedQueue = dom.window.document.getElementById(this.#queueId);
+      const dequeued = parsedQueue.getElementsByTagName('li')[0];
+      if (!dequeued) throw new Error('queue is empty');
+
+      parsedQueue.removeChild(dequeued);
+      await writeFile(this.location, dom.window.document.documentElement.outerHTML);
+      return { data: { ...dequeued.dataset }, error: null as null };
+    } catch (err) {
+      return { data: null as null, error: err as Error };
+    }
   }
 }
