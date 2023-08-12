@@ -1,0 +1,12 @@
+{
+  "name": "jestconfig",
+  "version": "1.0.0",
+  "description": "jest configurations for monorepo",
+  "private": true,
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "jest.config.js"
+  ]
+}
