@@ -32,10 +32,10 @@ export class FifoQueue {
   async #getQueue() {
     try {
       const file = await readFile(this.location);
-      return { data: file.toString(), error: null as null };
+      return { data: file.toString(), error: null };
     } catch (error) {
       const castError = error as Error;
-      return { data: null as null, error: castError };
+      return { data: null, error: castError };
     }
   }
 
@@ -45,6 +45,7 @@ export class FifoQueue {
       if (error) throw error;
       const dom = new JSDOM(currQueue);
       const parsedQueue = dom.window.document.getElementById(this.#queueId);
+      if (!parsedQueue) throw new Error('no queue found');
       parsedQueue.appendChild(item);
       await writeFile(this.location, dom.window.document.documentElement.outerHTML);
       return null;
@@ -69,16 +70,27 @@ export class FifoQueue {
     try {
       const { data: currQueue, error } = await this.#getQueue();
       if (error) throw error;
+
       const dom = new JSDOM(currQueue);
       const parsedQueue = dom.window.document.getElementById(this.#queueId);
-      const dequeued = parsedQueue.getElementsByTagName('li')[0];
+      const dequeued = parsedQueue?.getElementsByTagName('li')[0];
       if (!dequeued) throw new Error('queue is empty');
-
       parsedQueue.removeChild(dequeued);
       await writeFile(this.location, dom.window.document.documentElement.outerHTML);
-      return { data: { ...dequeued.dataset }, error: null as null };
+
+      const data = Object.entries(dequeued.dataset).reduce<{ [k: string]: string }>(
+        (cleanObject, [key, value]) => {
+          if (!!value) {
+            cleanObject[key] = value;
+          }
+          return cleanObject;
+        },
+        {}
+      );
+
+      return { data, error: null };
     } catch (err) {
-      return { data: null as null, error: err as Error };
+      return { data: null, error: err as Error };
     }
   }
 }

@@ -38,11 +38,11 @@ describe('FifoQueue', () => {
     const { data: secondItem, error: secondErr } = await queue.dequeueItem();
     expect(firstErr).toBeNull();
     expect(firstItem).toBeDefined();
-    expect(firstItem.bar).toBe('baz');
-    expect(firstItem.baz).not.toBe('no clue what comes next');
+    expect(firstItem?.bar).toBe('baz');
+    expect(firstItem?.baz).not.toBe('no clue what comes next');
     expect(secondErr).toBeNull();
     expect(secondItem).toBeDefined();
-    expect(secondItem.baz).toBe('no clue what comes next');
-    expect(secondItem.bar).not.toBe('baz');
+    expect(secondItem?.baz).toBe('no clue what comes next');
+    expect(secondItem?.bar).not.toBe('baz');
   });
 });
