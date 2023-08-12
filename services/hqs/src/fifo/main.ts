@@ -1,6 +1,5 @@
-import { parse, Node } from 'node-html-parser';
 import { readFile, writeFile } from 'node:fs/promises';
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { writeFileSync, existsSync } from 'node:fs';
 import { JSDOM } from 'jsdom';
 
 export class FifoQueue {
