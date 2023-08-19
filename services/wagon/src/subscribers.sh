@@ -1,9 +1,6 @@
 #! /usr/bin/env bash
 
 SUBSCRIBERS=( 
-    "FOO,BAR"
-    "BAR,BAZ" 
-    "BAZ,WHATEVER" 
     # NEW_SUBSCRIBER_HERE 
 )
 
