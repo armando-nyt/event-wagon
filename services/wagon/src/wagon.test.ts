@@ -29,6 +29,7 @@ it('should add to the list of subscribers', async () => {
   };
   const { data, error } = await _saveSubscriber(LIST_PATH, newSub);
   expect(error).toBeNull();
+  expect(data).toBe('');
 });
 
 it('should escape forward slash in url', () => {
