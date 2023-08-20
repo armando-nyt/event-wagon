@@ -4,6 +4,8 @@
   "description": "",
   "scripts": {
     "dev": "tsc -w & nodemon -q -w dist dist/main.js",
+    "build": "tsc",
+    "start": "node dist/main.js",
     "test": "jest"
   },
   "keywords": [],

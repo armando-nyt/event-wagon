@@ -1,4 +1,7 @@
 {
   "extends": "tsconfig/vanilla-node.json",
-  "include": ["src/**/*"]
+  "include": ["src/**/*"],
+  "compilerOptions": {
+    "outDir": "dist"
+  }
 }

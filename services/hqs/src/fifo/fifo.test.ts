@@ -1,5 +1,5 @@
 import { resolve } from 'node:path';
-import { FifoQueue } from './main';
+import { FifoQueue } from './fifo';
 import { readFile } from 'node:fs/promises';
 import { unlinkSync } from 'node:fs';
 import parse from 'node-html-parser';

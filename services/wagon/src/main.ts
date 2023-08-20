@@ -7,6 +7,7 @@ const PORT = 3000;
 
 async function relayMessage(subscriber: Subscriber, event: string) {
   try {
+    console.log('sending post to sub', { subscriber, event });
     await axios.post(subscriber.webhook, event);
     return null;
   } catch (error) {

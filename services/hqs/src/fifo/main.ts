@@ -1,95 +1,68 @@
-import { readFile, writeFile } from 'node:fs/promises';
-import { writeFileSync, existsSync } from 'node:fs';
-import { JSDOM } from 'jsdom';
+import http from 'http';
+import { FifoQueue } from './fifo';
+import { resolve } from 'path';
 
-export class FifoQueue {
-  location: string;
-  #queueId: string;
+const PORT = 4000;
+const queuePath = resolve(__dirname, './fifo.html');
 
-  constructor(location: string) {
-    this.#queueId = 'foooofiiii';
-    this.location = location;
-    const err = this.#createQueue();
-    if (err) console.error(err);
-  }
+const fifo = new FifoQueue(queuePath);
 
-  #createQueue() {
-    const base = `<!DOCTYPE html>
-    <body>
-    <ul id=${this.#queueId}></ul>
-    </body>`;
-
-    try {
-      if (existsSync(this.location)) throw new Error('file already exists');
-      writeFileSync(this.location, base);
-      return null;
-    } catch (err) {
-      return err as Error;
-    }
-  }
-
-  async #getQueue() {
-    try {
-      const file = await readFile(this.location);
-      return { data: file.toString(), error: null };
-    } catch (error) {
-      const castError = error as Error;
-      return { data: null, error: castError };
-    }
-  }
-
-  async #enqueueItem(item: HTMLLIElement) {
-    try {
-      const { data: currQueue, error } = await this.#getQueue();
-      if (error) throw error;
-      const dom = new JSDOM(currQueue);
-      const parsedQueue = dom.window.document.getElementById(this.#queueId);
-      if (!parsedQueue) throw new Error('no queue found');
-      parsedQueue.appendChild(item);
-      await writeFile(this.location, dom.window.document.documentElement.outerHTML);
-      return null;
-    } catch (error) {
-      return error as Error;
-    }
-  }
-
-  async enqueueItem(item: Record<string, string>) {
-    const dom = new JSDOM('');
-    const newItem = dom.window.document.createElement('li');
-    Object.entries(item).forEach(([key, value]) => {
-      newItem.dataset[key] = value;
-    });
-    const err = await this.#enqueueItem(newItem);
-    if (err) return err;
-
-    return null;
-  }
-
-  async dequeueItem() {
-    try {
-      const { data: currQueue, error } = await this.#getQueue();
-      if (error) throw error;
-
-      const dom = new JSDOM(currQueue);
-      const parsedQueue = dom.window.document.getElementById(this.#queueId);
-      const dequeued = parsedQueue?.getElementsByTagName('li')[0];
-      if (!dequeued) throw new Error('queue is empty');
-      parsedQueue.removeChild(dequeued);
-      await writeFile(this.location, dom.window.document.documentElement.outerHTML);
-
-      const data = Object.entries(dequeued.dataset).reduce<{ [k: string]: string }>(
-        (cleanObject, [key, value]) => {
-          if (!!value) {
-            cleanObject[key] = value;
-          }
-          return cleanObject;
-        },
-        {}
-      );
-
-      return { data, error: null };
-    } catch (err) {
-      return { data: null, error: err as Error };
-    }
-  }
+async function readBody(req: http.IncomingMessage) {
+  return new Promise<{ data: string; error: null } | { data: null; error: Error }>((resolve) => {
+    let rawData = '';
+    req
+      .on('data', (chunk) => {
+        rawData += chunk;
+      })
+      .on('end', () => {
+        resolve({ data: rawData, error: null });
+      })
+      .on('error', (err) => resolve({ data: null, error: err }));
+  });
 }
+
+const server = http.createServer(async (req, res) => {
+  const [url] = req.url?.split('?') || '';
+
+  switch (url) {
+    case '/':
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'text/plain');
+      console.log('pong');
+      res.end('pong');
+      return;
+
+    case '/webhook': {
+      if (req.method !== 'POST') {
+        res.statusCode = 400;
+        res.setHeader('Content-Type', 'text/plain');
+        res.end('bad request');
+        return;
+      }
+      console.log('about to parse json');
+      const { data, error } = await readBody(req);
+      if (error) {
+        res.statusCode = 400;
+        res.setHeader('Content-Type', 'text/plain');
+        res.end('malformed request');
+        return;
+      }
+      console.log({ data });
+      const jsonfifiedData = JSON.parse(data);
+      fifo.enqueueItem(jsonfifiedData);
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'text/plain');
+      res.end('ok');
+      return;
+    }
+
+    default:
+      res.statusCode = 400;
+      res.setHeader('Content-Type', 'text/plain');
+      res.end('default');
+  }
+});
+
+server.listen(PORT, () => {
+  console.log(`Server running at http://localhost:${PORT}/`);
+});

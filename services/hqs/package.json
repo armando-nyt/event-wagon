@@ -1,10 +1,12 @@
 {
-  "name": "event-wagon",
+  "name": "hqs",
   "version": "1.0.0",
   "description": "event messaging service for the future",
   "main": "index.js",
   "scripts": {
     "dev": "tsc -w & nodemon -q -w dist dist/main.js",
+    "build": "tsc",
+    "start": "node dist/main.js",
     "test": "jest"
   },
   "keywords": [],

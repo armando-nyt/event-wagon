@@ -83,6 +83,7 @@ export class MesageProcessor {
 
     for (let message of this.#buquet) {
       for (let sub of subscribers) {
+        console.log('about to send message');
         const err = await this.#processHandler(sub, message);
         if (err) {
           this.#errors.push(err);
